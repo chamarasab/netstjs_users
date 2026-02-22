@@ -59,40 +59,302 @@ $ npm run test:cov
 
 ## Deployment
 
-When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.
+# NestJS CRUD API Booklet
 
-If you are looking for a cloud-based platform to deploy your NestJS application, check out [Mau](https://mau.nestjs.com), our official platform for deploying NestJS applications on AWS. Mau makes deployment straightforward and fast, requiring just a few simple steps:
+This booklet is a guided lab for building a NestJS CRUD API with MongoDB. It is written for a university lab session: clear steps, a clean flow, and code blocks you can copy. The flow starts from a fresh project and ends with a working CRUD API backed by MongoDB.
+
+## Booklet flow (fresh project to CRUD)
+
+1) Create a new NestJS project
+2) Run the app and verify the Hello World page
+3) Generate the `users` CRUD resource
+4) Create the MongoDB schema for `users`
+5) Register the schema in the module
+6) Implement service logic (CRUD operations)
+7) Connect controller routes to the service
+8) Connect the app to MongoDB Atlas
+9) Test endpoints
+
+## Nest CLI commands used
+
+These are the exact Nest CLI commands we used to create the project files and structure:
 
 ```bash
-$ npm install -g @nestjs/mau
-$ mau deploy
+nest new backend
+npm i @nestjs/mongoose mongoose
+npm start
+nest g mo users
+nest g cl users/schema/users.schema --flat --no-spec
+nest g s users --no-spec
+nest g co users --no-spec
 ```
 
-With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
+## Prerequisites
 
-## Resources
+- Node.js (LTS recommended)
+- npm (or your preferred package manager)
+- NestJS CLI installed globally (`npm i -g @nestjs/cli`)
+- A MongoDB Atlas account
 
-Check out a few resources that may come in handy when working with NestJS:
+## Part 1: Fresh project setup
 
-- Visit the [NestJS Documentation](https://docs.nestjs.com) to learn more about the framework.
-- For questions and support, please visit our [Discord channel](https://discord.gg/G7Qnnhy).
-- To dive deeper and get more hands-on experience, check out our official video [courses](https://courses.nestjs.com/).
-- Deploy your application to AWS with the help of [NestJS Mau](https://mau.nestjs.com) in just a few clicks.
-- Visualize your application graph and interact with the NestJS application in real-time using [NestJS Devtools](https://devtools.nestjs.com).
-- Need help with your project (part-time to full-time)? Check out our official [enterprise support](https://enterprise.nestjs.com).
-- To stay in the loop and get updates, follow us on [X](https://x.com/nestframework) and [LinkedIn](https://linkedin.com/company/nestjs).
-- Looking for a job, or have a job to offer? Check out our official [Jobs board](https://jobs.nestjs.com).
+### 1.1 Create the project
 
-## Support
+```bash
+nest new backend
+```
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+Choose `npm` when prompted.
 
-## Stay in touch
+### 1.2 Enter the project folder
 
-- Author - [Kamil Myśliwiec](https://twitter.com/kammysliwiec)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+```bash
+cd backend
+```
 
-## License
+### 1.3 Run the server
 
-Nest is [MIT licensed](https://github.com/nestjs/nest/blob/master/LICENSE).
+```bash
+npm run start
+```
+
+Open `http://localhost:3000` and confirm the Hello World page.
+
+### 1.4 (Optional) Debug with VS Code (Attach)
+
+- Run and Debug > Create launch.json > Node.js > Node.js: Attach
+- Start debug mode:
+
+```bash
+npm run start:debug
+```
+
+Confirm the server still responds at `http://localhost:3000`.
+
+## Part 2: Generate CRUD files
+
+We will build a `users` resource.
+
+### 2 Confirm routes
+
+Nest generates standard routes:
+
+- `POST /users`
+- `GET /users`
+- `GET /users/:id`
+- `PUT /users/:id`
+- `DELETE /users/:id`
+
+## Part 3: MongoDB connection
+
+### 3.1 Create a MongoDB Atlas database
+
+1) Sign up for MongoDB Atlas.
+2) Create a cluster.
+3) Create a database and a collection.
+4) Copy the DNS connection string for the cluster.
+
+### 3.2 Install Mongoose
+
+```bash
+npm i @nestjs/mongoose mongoose
+```
+
+### 3.3 Configure the MongoDB URI
+
+This project sets the URI in [backend/src/app.module.ts](backend/src/app.module.ts). Use the DNS string from Atlas:
+
+
+```ts
+import { Module } from '@nestjs/common';
+import { AppController } from './app.controller';
+import { AppService } from './app.service';
+import { MongooseModule } from '@nestjs/mongoose';
+import { UsersModule } from './users/users.module';
+
+@Module({
+  imports: [
+    MongooseModule.forRoot('mongodb+srv://<user>:<password>@crudcluster.6pfkbzp.mongodb.net/<db_name>?appName=CRUDCluster'),
+    UsersModule
+  ],
+  controllers: [AppController],
+  providers: [AppService],
+})
+export class AppModule {}
+
+```
+
+Replace the placeholders with your Atlas credentials and database name.
+
+## Part 4: Build the users feature
+
+This section shows the code we changed to move from a fresh project to a working CRUD API. Use these blocks to align your project.
+
+### 4.1 User schema
+
+From [backend/src/users/schema/users.schema.ts](backend/src/users/schema/users.schema.ts):
+
+```ts
+import {Prop, Schema, SchemaFactory} from "@nestjs/mongoose";
+import {Document} from "mongoose";
+import { version } from "os";
+
+export type UserDocument = User & Document;
+
+@Schema({ versionKey: false })
+export class User {
+    @Prop({required: true})
+    name: string;
+
+    @Prop({required: true})
+    email: string;
+
+    @Prop({required: true})
+    password: string;
+
+    @Prop({required: true})
+    created_at: string;
+}
+
+export const UserSchema = SchemaFactory.createForClass(User);
+
+```
+
+### 4.2 Users module
+
+From [backend/src/users/users.module.ts](backend/src/users/users.module.ts):
+
+```ts
+import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+import { User, UserSchema } from './schema/users.schema';
+import { UsersService } from './users.service';
+import { UsersController } from './users.controller';
+
+@Module({
+    imports: [
+        MongooseModule.forFeature([
+            { 
+                name: User.name, 
+                schema: UserSchema, 
+                collection: 'users' 
+            }
+        ]),
+    ],
+    providers: [UsersService],
+    controllers: [UsersController],
+
+})
+export class UsersModule { }
+```
+
+### 4.3 Users service
+
+From [backend/src/users/users.service.ts](backend/src/users/users.service.ts):
+
+```ts
+import { Injectable } from '@nestjs/common';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+import { User, UserDocument } from './schema/users.schema';
+
+@Injectable()
+export class UsersService {
+    constructor(@InjectModel(User.name) private userModel: Model<UserDocument>) { }
+
+    async getAllUsers(): Promise<User[]> {
+        return this.userModel.find().exec();
+    }
+
+    async createUser(user: User): Promise<User> {
+        const createdUser = new this.userModel(user);
+        return createdUser.save();
+    }
+
+    async getUserById(id: string): Promise<User | null> {
+        return this.userModel.findById(id).exec();
+    }
+
+    async updateUser(id: string, user: Partial<User>): Promise<User | null> {
+        return this.userModel
+            .findByIdAndUpdate(id, user, { returnDocument: 'after' })
+            .exec();
+    }
+
+    async deleteUser(id: string): Promise<User | null> {
+        return this.userModel.findByIdAndDelete(id).exec();
+    }
+}
+
+```
+
+### 4.4 Users controller
+
+From [backend/src/users/users.controller.ts](backend/src/users/users.controller.ts):
+
+```ts
+import { Body, Controller, Get, Post, Put, Delete, Param } from '@nestjs/common';
+import { UsersService } from './users.service';
+import { User } from './schema/users.schema';
+
+@Controller('users')
+export class UsersController {
+    constructor(private readonly usersService: UsersService) {}
+
+    @Get()
+    async getAllUsers() {
+        return this.usersService.getAllUsers();
+    }
+
+    @Post()
+    async createUser(@Body() user: User) {
+        return this.usersService.createUser(user);
+    }
+
+    @Get(':_id')
+    async getUserById(@Param('_id') id: string) {
+        return this.usersService.getUserById(id);
+    }
+
+    @Put(':_id')
+    async updateUser(@Param('_id') id: string, @Body() user: Partial<User>) {
+        return this.usersService.updateUser(id, user);
+    }
+
+    @Delete(':_id')
+    async deleteUser(@Param('_id') id: string) {
+        return this.usersService.deleteUser(id);
+    }
+}
+
+```
+
+## Part 5: Test the API
+
+Start the server if it is not running:
+
+```bash
+npm run start
+```
+
+Use Postman or curl to test the endpoints.
+
+## Troubleshooting
+
+- Port already in use: stop the other server or change the port in `main.ts`.
+- MongoDB connection errors: verify username, password, and IP access in Atlas.
+- Mongoose warning about `new` option: use `returnDocument: 'after'` for updates.
+
+## Lab checklist
+
+- Project created and server running
+- CRUD resource generated
+- MongoDB connected
+- Schema, module, service, controller updated
+- Routes tested
+
+## Next exercises
+
+- Add schema validation with decorators
+- Implement a service method for filtered search
+- Add pagination to `GET /users`
