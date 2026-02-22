@@ -25,41 +25,8 @@
 
 [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
 
-## Project setup
 
-```bash
-$ npm install
-```
-
-## Compile and run the project
-
-```bash
-# development
-$ npm run start
-
-# watch mode
-$ npm run start:dev
-
-# production mode
-$ npm run start:prod
-```
-
-## Run tests
-
-```bash
-# unit tests
-$ npm run test
-
-# e2e tests
-$ npm run test:e2e
-
-# test coverage
-$ npm run test:cov
-```
-
-## Deployment
-
-# NestJS CRUD API Booklet
+# NestJS CRUD API
 
 This booklet is a guided lab for building a NestJS CRUD API with MongoDB. It is written for a university lab session: clear steps, a clean flow, and code blocks you can copy. The flow starts from a fresh project and ends with a working CRUD API backed by MongoDB.
 
